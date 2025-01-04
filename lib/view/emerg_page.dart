@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class EmergencyPage extends StatefulWidget {
+  final String doctorName;
+  EmergencyPage({required this.doctorName});
+
   @override
   _EmergencyPageState createState() => _EmergencyPageState();
 }
@@ -9,7 +12,6 @@ class EmergencyPage extends StatefulWidget {
 class _EmergencyPageState extends State<EmergencyPage> {
   String? selectedReason; // Only one toggle at a time
   bool doctorArrived = false; // Doctor arrived is separate
-  final String doctorName = "Dr. Shanu"; // Customize doctor name
 
   final Map<String, String> notificationMessages = {
     'Doctor Late': 'is currently late.',
@@ -35,7 +37,6 @@ class _EmergencyPageState extends State<EmergencyPage> {
     'Lab Test': TextEditingController(),
   };
 
-
   Future<void> addNotificationToFirestore(String message) async {
     try {
       await FirebaseFirestore.instance.collection('notifications').add({
@@ -52,7 +53,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
     String message = "";
 
     if (selectedReason != null) {
-      message = "$doctorName ${notificationMessages[selectedReason]!}";
+      message = "${widget.doctorName} ${notificationMessages[selectedReason]!}";
       String lateTime = lateTimeControllers[selectedReason!]!.text;
       if (lateTime.isNotEmpty) {
         message += " Approx. delay: $lateTime minutes.";
@@ -60,7 +61,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
     }
 
     if (doctorArrived) {
-      message = "$doctorName has arrived and is available.";
+      message = "${widget.doctorName} has arrived and is available.";
     }
 
     if (message.isEmpty) {
@@ -68,7 +69,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
       return;
     }
 
-    await addNotificationToFirestore(message); //
+    await addNotificationToFirestore(message);
     _showDialog("Notification sent successfully!");
   }
 
@@ -91,62 +92,78 @@ class _EmergencyPageState extends State<EmergencyPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Emergency Status'),
-        backgroundColor: Colors.blue.shade900,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            ...lateTimeControllers.keys.map((reason) {
-              bool isSelected = selectedReason == reason;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Row(
-                  children: [
-                    Icon(reasonIcons[reason], color: Colors.blue.shade800),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Text(reason, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-                    ),
-                    Switch(
-                      value: isSelected,
-                      onChanged: (value) {
-                        setState(() {
-                          selectedReason = value ? reason : null;
-                        });
-                      },
-                      activeColor: Colors.redAccent,
-                    ),
-                    if (isSelected)
-                      SizedBox(
-                        width: 70,
-                        child: TextField(
-                          controller: lateTimeControllers[reason],
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: 'Mins',
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-                          ),
+
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Doctor: ${widget.doctorName}',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue.shade800,
+                ),
+              ),
+              SizedBox(height: 20),
+
+              // Reason selection with switches
+              ...lateTimeControllers.keys.map((reason) {
+                bool isSelected = selectedReason == reason;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10.0),
+                  child: Row(
+                    children: [
+                      Icon(reasonIcons[reason], color: Colors.blue.shade800),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          reason,
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                         ),
                       ),
-                  ],
-                ),
-              );
-            }).toList(),
+                      Switch(
+                        value: isSelected,
+                        onChanged: (value) {
+                          setState(() {
+                            selectedReason = value ? reason : null;
+                          });
+                        },
+                        activeColor: Colors.redAccent,
+                      ),
+                      if (isSelected)
+                        SizedBox(
+                          width: 90,
+                          child: TextField(
+                            controller: lateTimeControllers[reason],
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: 'Mins',
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              }).toList(),
 
-            Divider(),
+              Divider(),
+              SizedBox(height: 20),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Row(
+              // Doctor Arrived toggle
+              Row(
                 children: [
                   Icon(Icons.check_circle, color: Colors.green.shade800),
                   SizedBox(width: 10),
                   Expanded(
-                    child: Text('Doctor Arrived', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                    child: Text(
+                      'Doctor Arrived',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    ),
                   ),
                   Switch(
                     value: doctorArrived,
@@ -159,20 +176,26 @@ class _EmergencyPageState extends State<EmergencyPage> {
                   ),
                 ],
               ),
-            ),
 
-            Spacer(),
-
-            ElevatedButton.icon(
-              onPressed: sendNotification,
-              icon: Icon(Icons.notifications_active, color: Colors.white),
-              label: Text('Send Notification', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                padding: EdgeInsets.symmetric(vertical: 14.0, horizontal: 24.0),
+              // Send Notification Button
+              SizedBox(height: 30),
+              Center(
+                child: ElevatedButton.icon(
+                  onPressed: sendNotification,
+                  icon: Icon(Icons.notifications_active, color: Colors.white),
+                  label: Text(
+                    'Send Notification',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    padding: EdgeInsets.symmetric(vertical: 14.0, horizontal: 24.0),
+                  ),
+                ),
               ),
-            ),
-          ],
+              SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );

@@ -16,7 +16,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   final TextEditingController _leaveReasonController = TextEditingController();
   String? _clinicId;
   String? _doctorId;
-  String _status = "Available";
+  String _status = "";
 
   @override
   void initState() {
@@ -113,7 +113,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                 setState(() {
                   _status = value!;
                 });
-                _updateStatus(value!);
+               // _updateStatus(value!);
               }
             },
           ),
@@ -233,17 +233,17 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     );
   }
 
-  void _updateStatus(String status) {
-    FirebaseFirestore.instance
-        .collection('clinics')
-        .doc(_clinicId)
-        .collection('doctors')
-        .doc(_doctorId)
-        .update({'status': status});
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Status updated to $status")),
-    );
-  }
+  // void _updateStatus(String status) {
+  //   FirebaseFirestore.instance
+  //       .collection('clinics')
+  //       .doc(_clinicId)
+  //       .collection('doctors')
+  //       .doc(_doctorId)
+  //       .update({'status': status});
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(content: Text("Status updated to $status")),
+  //   );
+  // }
 
   void _applyForLeave() {
     final leaveReason = _leaveReasonController.text.trim();
@@ -292,7 +292,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
             ElevatedButton(
               onPressed: () {
                 final reason = _reasonController.text.trim();
-                _updateStatus("Late");
+               // _updateStatus("Late");
                 FirebaseFirestore.instance
                     .collection('clinics')
                     .doc(_clinicId)

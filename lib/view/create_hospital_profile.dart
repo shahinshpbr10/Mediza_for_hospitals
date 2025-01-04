@@ -256,6 +256,7 @@ class _ClinicProfileCreationState extends State<ClinicProfileCreation> with Sing
 
       await FirebaseFirestore.instance.collection('clinics').doc(clinicId).set({
         'clinicId': clinicId,
+        'type3': true,
         'name': _nameController.text.trim(),
         'email': _contactEmailController.text.trim(),
         'phone': _phoneController.text.trim(),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'emerg_page.dart';
+
 class TokenManagement extends StatefulWidget {
   final String email;
 
@@ -10,19 +12,24 @@ class TokenManagement extends StatefulWidget {
   _TokenManagementState createState() => _TokenManagementState();
 }
 
-class _TokenManagementState extends State<TokenManagement> {
+class _TokenManagementState extends State<TokenManagement>
+    with SingleTickerProviderStateMixin {
   List<Map<String, dynamic>> doctors = [];
   String? selectedDoctor;
-  List<Map<String, dynamic>> tokens = [];
   String? clinicId;
+  int selectedTokenCount = 10;
+  List<Map<String, dynamic>> tokens = [];
+  late TabController _tabController;
+  String? selectedToken;
 
   @override
   void initState() {
     super.initState();
-    findClinicByEmail(); // First find clinic by email
+    _tabController = TabController(length: 2, vsync: this);
+    findClinicByEmail();
+    _generateTokens(selectedTokenCount);
   }
 
-  // Find clinic by checking staff email
   Future<void> findClinicByEmail() async {
     try {
       final clinicsSnapshot = await FirebaseFirestore.instance
@@ -31,18 +38,14 @@ class _TokenManagementState extends State<TokenManagement> {
           .get();
 
       if (clinicsSnapshot.docs.isNotEmpty) {
-        // Get the first clinic where this staff works
         clinicId = clinicsSnapshot.docs.first.id;
-        await fetchDoctors(); // Then fetch doctors for this clinic
-      } else {
-        debugPrint('No clinic found for this email');
+        await fetchDoctors();
       }
     } catch (e) {
       debugPrint('Error finding clinic: $e');
     }
   }
 
-  // Fetch doctors from Firestore
   Future<void> fetchDoctors() async {
     if (clinicId == null) return;
 
@@ -66,213 +69,168 @@ class _TokenManagementState extends State<TokenManagement> {
         doctors = fetchedDoctors;
         if (doctors.isNotEmpty) selectedDoctor = doctors[0]['id'] as String;
       });
-
-      if (selectedDoctor != null) fetchTokens(selectedDoctor!);
     } catch (e) {
       debugPrint('Error fetching doctors: $e');
     }
   }
 
-  // Fetch tokens from Firestore for the selected doctor
-  Future<void> fetchTokens(String doctorId) async {
-    if (clinicId == null) return;
+  void _generateTokens(int count) {
+    setState(() {
+      tokens = List.generate(count, (index) {
+        return {'token': (index + 1).toString(), 'status': 'available'};
+      });
+    });
+  }
+
+  Future<void> updateLiveToken(String tokenNumber) async {
+    if (selectedDoctor == null) return;
 
     try {
-      final tokenSnapshot = await FirebaseFirestore.instance
-          .collection('clinics')
-          .doc(clinicId)
-          .collection('bookings')
-          .where('doctorId', isEqualTo: doctorId)
-          .get();
-
-      final fetchedTokens = tokenSnapshot.docs.map((doc) {
-        final data = doc.data();
-        return {
-          'token': data['token'].toString() ?? 'Unknown',
-          'status': data['status'] ?? 'available',
-        };
-      }).toList();
-
-      setState(() {
-        tokens = fetchedTokens;
-      });
+      await FirebaseFirestore.instance
+          .collection('liveToken')
+          .doc(selectedDoctor)
+          .set({
+        'token': tokenNumber,
+        'doctorId': selectedDoctor,
+        'doctorName': doctors.firstWhere((doctor) => doctor['id'] == selectedDoctor)['doctor'],
+        'clinicName': clinicId,
+      }, SetOptions(merge: true));
+      debugPrint('Live token updated: $tokenNumber');
     } catch (e) {
-      debugPrint('Error fetching tokens: $e');
+      debugPrint('Error updating live token: $e');
     }
   }
 
-  void assignToken(int index) {
-    setState(() => tokens[index]['status'] = 'assigned');
-    // Update Firestore if needed
+  Widget _buildTokenCountInput() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: TextField(
+              decoration: const InputDecoration(
+                labelText: 'Number of Tokens',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (value) {
+                setState(() {
+                  selectedTokenCount = int.tryParse(value) ?? 10;
+                  _generateTokens(selectedTokenCount);
+                });
+              },
+              controller: TextEditingController(text: selectedTokenCount.toString()),
+            ),
+          ),
+          const SizedBox(width: 16),
+          if (selectedToken != null)
+            Text(
+              'Selected: $selectedToken',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+        ],
+      ),
+    );
   }
 
-  void unassignToken(int index) {
-    setState(() => tokens[index]['status'] = 'available');
-    // Update Firestore if needed
+  Widget _buildDoctorDropdown() {
+    return DropdownButton<String>(
+      value: selectedDoctor,
+      isExpanded: true,
+      items: doctors.map((doc) {
+        return DropdownMenuItem<String>(
+          value: doc['id'] as String,
+          child: Text('${doc['doctor']} (${doc['category']})'),
+        );
+      }).toList(),
+      onChanged: (value) {
+        setState(() => selectedDoctor = value);
+      },
+    );
+  }
+
+  Widget _buildTokenGrid() {
+    return Expanded(
+      child: GridView.builder(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 6,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+        ),
+        itemCount: tokens.length,
+        itemBuilder: (context, index) {
+          final isAssigned = tokens[index]['status'] == 'assigned';
+
+          Color backgroundColor = isAssigned
+              ? Colors.green
+              : (index % 2 == 0
+              ? Colors.red.withOpacity(0.7)
+              : Colors.red.withOpacity(0.5));
+
+          return InkWell(
+            onTap: () {
+              setState(() {
+                tokens[index]['status'] = isAssigned ? 'available' : 'assigned';
+                selectedToken = tokens[index]['token'] as String;
+              });
+              updateLiveToken(tokens[index]['token'] as String);
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: backgroundColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text(
+                  tokens[index]['token'] as String,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF8F9FA), Color(0xFFE9ECEF)],
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Select Doctor',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2C3E50),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (doctors.isNotEmpty)
-                      DropdownButton<String>(
-                        value: selectedDoctor,
-                        isExpanded: true,
-                        items: doctors.map((doc) {
-                          return DropdownMenuItem<String>(
-                            value: doc['id'] as String,
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: _getCategoryColor(doc['category'] as String),
-                                  radius: 16,
-                                  child: Text(
-                                    (doc['doctor'] as String)[0],
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Text('${doc['doctor']} (${doc['category']})'),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() => selectedDoctor = value);
-                          if (value != null) fetchTokens(value);
-                        },
-                      )
-                    else
-                      const Text('No doctors available.'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Available Tokens',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2C3E50),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: tokens.isNotEmpty
-                    ? GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 6,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                  ),
-                  itemCount: tokens.length,
-                  itemBuilder: (context, index) {
-                    final isAssigned = tokens[index]['status'] == 'assigned';
-                    return InkWell(
-                      onTap: () => isAssigned
-                          ? unassignToken(index)
-                          : assignToken(index),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isAssigned
-                              ? const Color(0xFFE74C3C)
-                              : const Color(0xFF2ECC71),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: (isAssigned ? Colors.red : Colors.green)
-                                  .withOpacity(0.2),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                tokens[index]['token'] as String,
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                isAssigned ? 'Assigned' : 'Available',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white.withOpacity(0.8),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                )
-                    : const Center(child: Text('No tokens available.')),
-              ),
-            ],
-          ),
+      backgroundColor: const Color(0xFFF8F9FA),
+
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF8F9FA),
+        title: const Text('Token Management'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Tokens'),
+            Tab(text: 'Emergency'),
+          ],
         ),
       ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildDoctorDropdown(),
+                _buildTokenCountInput(),
+                _buildTokenGrid(),
+              ],
+            ),
+          ),
+          EmergencyPage(doctorName: doctors.firstWhere((doctor) => doctor['id'] == selectedDoctor)['doctor'],),
+        ],
+      ),
     );
-  }
-
-  Color _getCategoryColor(String category) {
-    switch (category) {
-      case 'Cardiologist':
-        return const Color(0xFF3498DB);
-      case 'Neurologist':
-        return const Color(0xFF9B59B6);
-      case 'Dentist':
-        return const Color(0xFFE67E22);
-      case 'Orthopedic':
-        return const Color(0xFF1ABC9C);
-      default:
-        return const Color(0xFF34495E);
-    }
   }
 }
