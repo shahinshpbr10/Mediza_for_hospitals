@@ -54,10 +54,10 @@ class Dashboard extends StatelessWidget {
               colors: [Color(0xFF2C3E50), Color(0xFF3498DB)],
             ),
           ),
-          child: const TabBarView(
+          child: TabBarView(
             children: [
-              AppointmentList(),
-              TokenManagement(),
+              const AppointmentList(),
+              const TokenManagement(),
               EmergencyPage(),
             ],
           ),
