@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -28,9 +29,10 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
     final pageTitle = ref.watch(pageTitleProvider);
 
     return Scaffold(
+
       body: Stack(
         children: [
-          Container(color: Colors.white),
+          Container(color: Colors.grey.shade100),
           Center(
             child: Responsive(
               mobile: _buildForm(pageTitle),
@@ -41,31 +43,55 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
           if (isLoading)
             Container(
               color: Colors.black45,
-              child: Center(child: CircularProgressIndicator()),
+              child: Center(child: CircularProgressIndicator(color: Colors.white)),
             ),
         ],
       ),
     );
   }
 
+
+
   Widget _buildDesktopLayout(String pageTitle) {
     return Row(
       children: [
         Expanded(
           child: Container(
-            padding: EdgeInsets.all(32),
+            width: 400,
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.blue.shade300, Colors.blue.shade600],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 12,
+                  offset: Offset(0, 6),
+                ),
+              ],
+            ),
+
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Join Us',
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.lobster(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                 ),
                 SizedBox(height: 16),
-                Text('• For Clinic Owners: Select SuperAdmin'),
-                Text('• For Doctors: Select Doctor Role'),
-                Text('• For Nurses: Select Nurse Role'),
+                Text(
+                  'Create your account to get started.',
+                  style: TextStyle(fontSize: 18, color: Colors.white70),
+                ),
               ],
             ),
           ),
@@ -78,37 +104,63 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
   Widget _buildForm(String pageTitle) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(32),
-      child: Container(
-        width: 400,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              pageTitle,
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+      child: Center(
+        child: Container(
+          width: 400,
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.blue.shade300, Colors.blue.shade600],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            SizedBox(height: 32),
-            _buildTextField('Name', Icons.person, nameController),
-            SizedBox(height: 16),
-            _buildTextField('Email', Icons.email, emailController),
-            SizedBox(height: 16),
-            _buildPhoneField(),
-            SizedBox(height: 16),
-            _buildTextField('Password', Icons.lock, passwordController, isPassword: true),
-            SizedBox(height: 16),
-            _buildTextField('Confirm Password', Icons.lock_outline, confirmPassController, isPassword: true),
-            SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: isLoading ? null : () => _handleSignup(context),
-              child: Text('Create Account'),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 12,
+                offset: Offset(0, 6),
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Icon(Icons.person_add, size: 80, color: Colors.white),
+              SizedBox(height: 16),
+              Text(
+                pageTitle,
+                style: GoogleFonts.lobster(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 32),
+              _buildTextField('Name', Icons.person, nameController),
+              SizedBox(height: 16),
+              _buildTextField('Email', Icons.email, emailController),
+              SizedBox(height: 16),
+              _buildPhoneField(),
+              SizedBox(height: 16),
+              _buildTextField('Password', Icons.lock, passwordController, isPassword: true),
+              SizedBox(height: 16),
+              _buildTextField('Confirm Password', Icons.lock_outline, confirmPassController, isPassword: true),
+              SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: isLoading ? null : () => _handleSignup(context),
+                child: Text('Create Account',),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.white ,
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -120,8 +172,16 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
       obscureText: isPassword,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
+        prefixIcon: Icon(icon, color: Colors.white),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.white, width: 1.5),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.white, width: 2),
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
     );
   }
@@ -132,13 +192,22 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
       decoration: InputDecoration(
         labelText: 'Phone Number',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.white, width: 1.5),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.white, width: 2),
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
       initialCountryCode: 'IN',
       onChanged: (phone) => phoneNumberWithCountryCode = phone.completeNumber,
     );
   }
 
-  Future<void> _handleSignup(BuildContext context) async {
+
+Future<void> _handleSignup(BuildContext context) async {
     if (!_validateForm(context)) return;
 
     setState(() => isLoading = true);

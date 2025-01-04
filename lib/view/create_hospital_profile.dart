@@ -1,4 +1,5 @@
 
+import 'package:dashboard_nurse_hospital/view/get_started.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -278,7 +279,7 @@ class _ClinicProfileCreationState extends State<ClinicProfileCreation> with Sing
 
       // Navigate to the landing page after successful form submission
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => LandingPage()),  // Replace with your landing page
+        MaterialPageRoute(builder: (context) => GetStartedPage()),  // Replace with your landing page
       );
 
     } catch (e) {

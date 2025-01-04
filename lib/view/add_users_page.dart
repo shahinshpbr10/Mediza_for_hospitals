@@ -638,20 +638,6 @@ class _AccountCreationState extends ConsumerState<StaffCreation> {
                       ),
                     ),
                     const SizedBox(width: 20),
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Lottie.asset(
-                            _roleImages[_selectedRole]!,
-                            fit: BoxFit.fill,
-                          ),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),

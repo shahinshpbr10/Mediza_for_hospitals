@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dashboard_nurse_hospital/view/account_creation_admin.dart';
 import 'package:dashboard_nurse_hospital/view/account_creation_page.dart';
 import 'package:dashboard_nurse_hospital/view/dashboard_page.dart';
+import 'package:dashboard_nurse_hospital/view/emerg_page.dart';
 import 'package:dashboard_nurse_hospital/view/get_started.dart';
 import 'package:dashboard_nurse_hospital/view/login_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -42,7 +43,7 @@ class MedizaDashboard extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: GetStartedPage(), // Replace with your main page
+      home: EmergencyPage(), // Replace with your main page
     );
   }
 }

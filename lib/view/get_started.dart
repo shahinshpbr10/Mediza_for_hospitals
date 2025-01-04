@@ -1,5 +1,6 @@
-
+import 'package:dashboard_nurse_hospital/view/doctor_view.dart';
 import 'package:dashboard_nurse_hospital/view/landing_page.dart';
+import 'package:dashboard_nurse_hospital/view/token_managment.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
@@ -7,7 +8,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lottie/lottie.dart';
 import '../../../main.dart';
 import 'account_creation_admin.dart';
 import '../../../core/responsive.dart';
@@ -33,32 +33,15 @@ class _GetStartedPageState extends ConsumerState<GetStartedPage> {
     return Scaffold(
       body: Stack(
         children: [
-          Container(
-            color: Colors.white,
-          ),
+          Container(color: Colors.grey.shade100),
           Responsive(
-            mobile: _buildLoginForm(pageTitle , subtitle),
-            tablet: _buildLoginForm(pageTitle , subtitle),
+            mobile: _buildLoginForm(pageTitle, subtitle),
+            tablet: _buildLoginForm(pageTitle, subtitle),
             desktop: _buildLoginForm(pageTitle, subtitle),
           ),
           if (isLoading)
-            Center(
-              child: CircularProgressIndicator(),
-            ),
+            const Center(child: CircularProgressIndicator(color: Colors.blue)),
         ],
-      ),
-    );
-  }
-
-  Widget _buildMobileMessage() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Text(
-          'Please use desktop version for access',
-          style: TextStyle(fontSize: 18),
-          textAlign: TextAlign.center,
-        ),
       ),
     );
   }
@@ -67,68 +50,93 @@ class _GetStartedPageState extends ConsumerState<GetStartedPage> {
     return Center(
       child: Container(
         width: 400,
-        padding: EdgeInsets.all(32),
+        padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          gradient: LinearGradient(
+            colors: [Colors.blue.shade300, Colors.blue.shade600],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black12,
-              blurRadius: 8,
-              offset: Offset(0, 2),
+              color: Colors.black26,
+              blurRadius: 12,
+              offset: Offset(0, 6),
             ),
           ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
               pageTitle,
-              style: TextStyle(
-                fontSize: 24,
+              style: GoogleFonts.lobster(
+                fontSize: 28,
                 fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
-            SizedBox(height: 8),
-            Text(subtitle),
-            SizedBox(height: 24),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: GoogleFonts.roboto(
+                fontSize: 16,
+                color: Colors.white70,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
             _buildTextField(
               controller: emailController,
               label: 'Email',
               icon: Icons.email,
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             _buildTextField(
               controller: passwordController,
               label: 'Password',
               icon: Icons.lock,
               isPassword: true,
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () => _forgotPassword(context),
-                child: Text('Forgot Password?'),
+                child: const Text(
+                  'Forgot Password?',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () => _loginUser(context),
-              child: Text('Login'),
+              child: const Text(
+                'Login',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
               style: ElevatedButton.styleFrom(
-                minimumSize: Size(double.infinity, 48),
+                foregroundColor: Colors.blue.shade700, backgroundColor: Colors.white,
+                elevation: 5,
+                shadowColor: Colors.blue.shade100,
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             RichText(
               text: TextSpan(
-                style: TextStyle(color: Colors.black),
+                style: const TextStyle(color: Colors.white),
                 children: [
-                  TextSpan(text: "New user? "),
+                  const TextSpan(text: "New user? "),
                   TextSpan(
                     text: "Create account",
-                    style: TextStyle(color: Colors.blue),
+                    style: const TextStyle(color: Colors.yellowAccent),
                     recognizer: TapGestureRecognizer()
                       ..onTap = () {
                         Navigator.push(
@@ -159,44 +167,59 @@ class _GetStartedPageState extends ConsumerState<GetStartedPage> {
       obscureText: isPassword,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
-        border: OutlineInputBorder(),
+        prefixIcon: Icon(icon, color: Colors.white),
+        filled: true,
+        fillColor: Colors.white24,
+        labelStyle: const TextStyle(color: Colors.white),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide.none,
+        ),
       ),
+      style: const TextStyle(color: Colors.white),
     );
   }
-
-  // Keeping all the original backend functions unchanged
-  void _forgotPassword(BuildContext context) async {
-    String email = emailController.text.trim();
+  Future<void> _forgotPassword(BuildContext context) async {
+    final email = emailController.text.trim();
 
     if (email.isEmpty) {
-      showCustomSnackbarl(
-          context, 'Please enter your email address.', Icons.error, Colors.red);
+      showCustomSnackbar(
+        context,
+        'Please enter your email address.',
+        Icons.error,
+        Colors.red,
+      );
       return;
     }
 
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-      showCustomSnackbarl(
-          context,
-          'Password reset email sent. Check your inbox.',
-          Icons.check,
-          Colors.green);
+      showCustomSnackbar(
+        context,
+        'Password reset email sent. Check your inbox.',
+        Icons.check,
+        Colors.green,
+      );
     } catch (e) {
-      showCustomSnackbarl(
-          context,
-          'Error occurred while sending password reset email.',
-          Icons.error,
-          Colors.red);
+      showCustomSnackbar(
+        context,
+        'Error occurred while sending password reset email.',
+        Icons.error,
+        Colors.red,
+      );
     }
   }
-
-  void _loginUser(BuildContext context) async {
-    String email = emailController.text.trim();
-    String password = passwordController.text.trim();
+  Future<void> _loginUser(BuildContext context) async {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      showCustomSnackbarl(context, 'Please fill in all required fields.', Icons.error, Colors.red);
+      showCustomSnackbar(
+        context,
+        'Please fill in all required fields.',
+        Icons.error,
+        Colors.red,
+      );
       return;
     }
 
@@ -205,142 +228,386 @@ class _GetStartedPageState extends ConsumerState<GetStartedPage> {
     });
 
     try {
-      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+      // Authenticate User
+      final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-
-      user = userCredential.user;
+      final user = userCredential.user;
 
       if (user != null) {
-        if (!user!.emailVerified) {
-          await user!.sendEmailVerification();
-          await Future.delayed(Duration(seconds: 3));
+        if (!user.emailVerified) {
+          await user.sendEmailVerification();
           await FirebaseAuth.instance.signOut();
-
-          showCustomSnackbarl(
+          showCustomSnackbar(
             context,
             'Email not verified. Please check your email.',
             Icons.error,
             Colors.red,
           );
-        } else {
-          // Check if the email exists in doctors or nurses sub-collection
-          QuerySnapshot doctorSnapshot = await FirebaseFirestore.instance
-              .collectionGroup('doctors')
-              .where('email', isEqualTo: email)
-              .get();
+          return;
+        }
 
-          QuerySnapshot nurseSnapshot = await FirebaseFirestore.instance
-              .collectionGroup('nurses')
-              .where('email', isEqualTo: email)
-              .get();
+        // Fetch Clinics containing the user's email
+        final clinicSnapshot = await FirebaseFirestore.instance
+            .collection('clinics')
+            .where('admins', arrayContains: email)
+            .get();
+        final doctorSnapshot = await FirebaseFirestore.instance
+            .collection('clinics')
+            .where('doctors', arrayContains: email)
+            .get();
+        final staffSnapshot = await FirebaseFirestore.instance
+            .collection('clinics')
+            .where('staffs', arrayContains: email)
+            .get();
 
-          DocumentSnapshot adminDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user!.uid)
-              .get();
+        final adminClinics = clinicSnapshot.docs;
+        final doctorClinics = doctorSnapshot.docs;
+        final staffClinics = staffSnapshot.docs;
 
-          final isDoctor = doctorSnapshot.docs.isNotEmpty;
-          final isNurse = nurseSnapshot.docs.isNotEmpty;
-          final isAdmin = adminDoc.exists;
-
-          if (isDoctor && isAdmin) {
-            // Show dialog to select role
-            _showRoleSelectionDialog(context);
-            return;
-          } else if (isDoctor) {
-            // Redirect to Doctor Dashboard
-            Navigator.pushReplacement(
-              context,
-              CupertinoPageRoute(builder: (context) => Scaffold(body: Text("Doctor")),
-            ));
-            return;
-          } else if (isNurse) {
-            // Redirect to Nurse Dashboard
-            Navigator.pushReplacement(
-              context,
-              CupertinoPageRoute(builder: (context) => Scaffold(body: Text("Nurse")),
-            ));
-            return;
-          } else if (isAdmin) {
-            // Redirect to Admin Dashboard
-            Navigator.pushReplacement(
-              context,
-              CupertinoPageRoute(builder: (context) => LandingPage()),
-            );
-            return;
+        // Determine Role(s) and Navigate
+        if (adminClinics.isNotEmpty && doctorClinics.isNotEmpty) {
+          _showRoleSelectionDialog(context, email, adminClinics, doctorClinics);
+        } else if (adminClinics.isNotEmpty) {
+          _navigateToClinic(context, email, adminClinics, 'Admin');
+        } else if (doctorClinics.isNotEmpty) {
+          if (doctorClinics.length > 1) {
+            _showClinicSelectionDialog(context, doctorClinics, email, 'Doctor');
           } else {
-            showCustomSnackbarl(
-              context,
-              'No user found with this email.',
-              Icons.error,
-              Colors.red,
-            );
+            _navigateToClinic(context, email, doctorClinics, 'Doctor');
           }
+        } else if (staffClinics.isNotEmpty) {
+          _navigateToClinic(context, email, staffClinics, 'Staff');
+        } else {
+          showCustomSnackbar(
+            context,
+            'No roles or clinics found for this email.',
+            Icons.error,
+            Colors.red,
+          );
         }
       }
     } catch (e) {
-      showCustomSnackbarl(context, e.toString(), Icons.error, Colors.red);
-      print(e);
+      showCustomSnackbar(
+        context,
+        'Login failed: ${e.toString()}',
+        Icons.error,
+        Colors.red,
+      );
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
     }
-
-    setState(() {
-      isLoading = false;
-    });
   }
 
-  void _showRoleSelectionDialog(BuildContext context) {
+  void _showRoleSelectionDialog(
+      BuildContext context,
+      String email,
+      List<QueryDocumentSnapshot> adminClinics,
+      List<QueryDocumentSnapshot> doctorClinics,
+      ) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("Select Role"),
-          content: Text("You have multiple roles. Please select the role you want to navigate to."),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pushReplacement(
-                  context,
-                  CupertinoPageRoute(builder: (context) => Scaffold(body: Text("Doctor"),)),
-                );
-              },
-              child: Text("Doctor"),
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.blue.shade300, Colors.blue.shade600],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 12,
+                  offset: Offset(0, 6),
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pushReplacement(
-                  context,
-                  CupertinoPageRoute(builder: (context) => LandingPage()),
-                );
-              },
-              child: Text("Admin"),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.person, color: Colors.blue[900]),
+                      SizedBox(width: 8),
+                      Text(
+                        "Select Role",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    "You have multiple roles in one or more clinics. Please select your role to continue:",
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                  SizedBox(height: 16),
+                  ListTile(
+                    leading: Icon(Icons.admin_panel_settings, color: Colors.green),
+                    title: Text(
+                      "Admin",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _navigateToClinic(context, email, adminClinics, 'Admin');
+                    },
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.medical_services, color: Colors.red),
+                    title: Text(
+                      "Doctor",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      if (doctorClinics.length > 1) {
+                        _showClinicSelectionDialog(context, doctorClinics, email, 'Doctor');
+                      } else {
+                        _navigateToClinic(context, email, doctorClinics, 'Doctor');
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
         );
       },
     );
   }
 
-}
 
-void showCustomSnackbarl(
-    BuildContext context, String message, IconData icon, Color backgroundColor,
-    [Duration duration = const Duration(seconds: 4)]) {
-  final snackBar = SnackBar(
-    duration: duration,
-    content: Row(
-      children: [
-        Icon(icon, color: Colors.white),
-        SizedBox(width: 10),
-        Expanded(child: Text(message)),
-      ],
-    ),
-    backgroundColor: backgroundColor,
-    behavior: SnackBarBehavior.floating,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-  );
-  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  void _showClinicSelectionDialog(
+      BuildContext context,
+      List<QueryDocumentSnapshot> clinics,
+      String email,
+      String role,
+      ) {
+    showDialog(barrierDismissible: false,
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.blue.shade300, Colors.blue.shade600],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 12,
+                  offset: Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.local_hospital, color: Colors.white),
+                      SizedBox(width: 8),
+                      Text(
+                        "Select Clinic",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(
+                  height: 250, // Increased height for better scrolling
+                  child: clinics.isNotEmpty
+                      ? ListView.separated(
+                    itemCount: clinics.length,
+                    separatorBuilder: (context, index) => Divider(
+                      color: Colors.grey.shade300,
+                      thickness: 1,
+                    ),
+                    itemBuilder: (context, index) {
+                      final clinicName =
+                          clinics[index]['name'] ?? 'Unknown Clinic';
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _navigateToClinic(context, email,
+                              [clinics[index]], role);
+                        },
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 16),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.grey.shade100,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.medical_services,
+                                color: Colors.blueAccent,
+                              ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  clinicName,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  )
+                      : Center(
+                    child: Text(
+                      "No clinics available.",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: Text(
+                      "Cancel",
+                      style: TextStyle(
+                        color: Colors.redAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+
+
+
+  void _navigateToClinic(
+      BuildContext context,
+      String email,
+      List<QueryDocumentSnapshot> clinics,
+      String role,
+      ) {
+    final clinic = clinics.first; // For single-clinic navigation
+    switch (role) {
+      case 'Admin':
+        Navigator.pushReplacement(
+          context,
+          CupertinoPageRoute(builder: (context) => LandingPage(email:email)),
+        );
+        break;
+      case 'Doctor':
+        Navigator.pushReplacement(
+          context,
+          CupertinoPageRoute(
+            builder: (context) => DoctorDashboard(email: email),
+          ),
+        );
+        break;
+      case 'Staff':
+        Navigator.pushReplacement(
+          context,
+          CupertinoPageRoute(
+            builder: (context) => const TokenManagement(),
+          ),
+        );
+        break;
+      default:
+        showCustomSnackbar(
+          context,
+          'Invalid role selected.',
+          Icons.error,
+          Colors.red,
+        );
+    }
+  }
+
+
+
+
+
+
+
+  void showCustomSnackbar(
+      BuildContext context,
+      String message,
+      IconData icon,
+      Color color,
+      ) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(icon, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: color,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 }

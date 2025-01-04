@@ -35,9 +35,15 @@ class _AssignShiftPageState extends State<AssignShiftPage> {
   }
 
   void _saveAssignment() async {
-    if (selectedNurseId == null || selectedDoctorId == null || startTime == null || endTime == null) {
+    if (selectedNurseId == null ||
+        selectedDoctorId == null ||
+        startTime == null ||
+        endTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please fill all fields')),
+        SnackBar(
+          content: Text('Please fill all fields'),
+          backgroundColor: Colors.redAccent,
+        ),
       );
       return;
     }
@@ -56,7 +62,10 @@ class _AssignShiftPageState extends State<AssignShiftPage> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Shift assigned successfully')),
+        SnackBar(
+          content: Text('Shift assigned successfully'),
+          backgroundColor: Colors.green,
+        ),
       );
 
       setState(() {
@@ -68,7 +77,10 @@ class _AssignShiftPageState extends State<AssignShiftPage> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
       );
     }
   }
@@ -77,126 +89,124 @@ class _AssignShiftPageState extends State<AssignShiftPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Assign Shifts", style: GoogleFonts.poppins()),
+        title: Text("Assign Shifts", style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        centerTitle: true,
+        elevation: 0,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Assign Shift to Nurse",
-              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+              "Assign Shift",
+              style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 16),
-            FutureBuilder<QuerySnapshot>(
-              future: FirebaseFirestore.instance
-                  .collection('clinics')
-                  .doc(widget.clinicId)
-                  .collection('nurses')
-                  .get(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return CircularProgressIndicator();
-                final nurses = snapshot.data!.docs;
-
-                return DropdownButtonFormField<String>(
-                  decoration: InputDecoration(
-                    labelText: "Select Nurse",
-                    border: OutlineInputBorder(),
-                  ),
-                  value: selectedNurseId,
-                  items: nurses
-                      .map((nurse) => DropdownMenuItem<String>(
-                    value: nurse['staffId'] as String,
-                    child: Text(nurse['name'] as String),
-                  ))
-                      .toList(),
-                  onChanged: (value) => setState(() {
-                    selectedNurseId = value;
-                  }),
-                );
-              },
-            ),
-
-            SizedBox(height: 16),
-            FutureBuilder<QuerySnapshot>(
-              future: FirebaseFirestore.instance
-                  .collection('clinics')
-                  .doc(widget.clinicId)
-                  .collection('doctors')
-                  .get(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return CircularProgressIndicator();
-                final doctors = snapshot.data!.docs;
-
-                return DropdownButtonFormField<String>(
-                  decoration: InputDecoration(
-                    labelText: "Select Doctor",
-                    border: OutlineInputBorder(),
-                  ),
-                  value: selectedDoctorId,
-                  items: doctors
-                      .map((doctor) => DropdownMenuItem<String>(
-                    value: doctor['staffId'] as String,
-                    child: Text(doctor['name'] as String),
-                  ))
-                      .toList(),
-                  onChanged: (value) => setState(() {
-                    selectedDoctorId = value;
-                  }),
-                );
-              },
-            ),
-
-            SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              decoration: InputDecoration(
-                labelText: "Select Shift",
-                border: OutlineInputBorder(),
-              ),
-              value: selectedShift,
-              items: ["Morning", "Afternoon", "Night"]
-                  .map((shift) => DropdownMenuItem(
-                value: shift,
-                child: Text(shift),
-              ))
-                  .toList(),
-              onChanged: (value) => setState(() {
-                selectedShift = value!;
-              }),
-            ),
-            SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => _pickTime(context, true),
-                    child: Text(
-                      startTime != null
-                          ? "Start Time: ${startTime!.format(context)}"
-                          : "Pick Start Time",
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => _pickTime(context, false),
-                    child: Text(
-                      endTime != null
-                          ? "End Time: ${endTime!.format(context)}"
-                          : "Pick End Time",
-                    ),
-                  ),
-                ),
-              ],
+            SizedBox(height: 8),
+            Text(
+              "Allocate shifts for nurses and doctors in the clinic.",
+              style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey),
             ),
             SizedBox(height: 24),
+            _buildCard(
+              title: "Select Nurse",
+              child: FutureBuilder<QuerySnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('clinics')
+                    .doc(widget.clinicId)
+                    .collection('nurses')
+                    .get(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
+                  final nurses = snapshot.data!.docs;
+
+                  return DropdownButtonFormField<String>(
+                    decoration: _inputDecoration("Choose a Nurse"),
+                    value: selectedNurseId,
+                    items: nurses
+                        .map((nurse) => DropdownMenuItem<String>(
+                      value: nurse['staffId'] as String,
+                      child: Text(nurse['name'] as String),
+                    ))
+                        .toList(),
+                    onChanged: (value) => setState(() {
+                      selectedNurseId = value;
+                    }),
+                  );
+                },
+              ),
+            ),
+            SizedBox(height: 16),
+            _buildCard(
+              title: "Select Doctor",
+              child: FutureBuilder<QuerySnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('clinics')
+                    .doc(widget.clinicId)
+                    .collection('doctors')
+                    .get(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
+                  final doctors = snapshot.data!.docs;
+
+                  return DropdownButtonFormField<String>(
+                    decoration: _inputDecoration("Choose a Doctor"),
+                    value: selectedDoctorId,
+                    items: doctors
+                        .map((doctor) => DropdownMenuItem<String>(
+                      value: doctor['staffId'] as String,
+                      child: Text(doctor['name'] as String),
+                    ))
+                        .toList(),
+                    onChanged: (value) => setState(() {
+                      selectedDoctorId = value;
+                    }),
+                  );
+                },
+              ),
+            ),
+            SizedBox(height: 16),
+            _buildCard(
+              title: "Select Shift",
+              child: DropdownButtonFormField<String>(
+                decoration: _inputDecoration("Shift Timing"),
+                value: selectedShift,
+                items: ["Morning", "Afternoon", "Night"]
+                    .map((shift) => DropdownMenuItem(
+                  value: shift,
+                  child: Text(shift),
+                ))
+                    .toList(),
+                onChanged: (value) => setState(() {
+                  selectedShift = value!;
+                }),
+              ),
+            ),
+            SizedBox(height: 16),
+            _buildCard(
+              title: "Select Time",
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _timePickerButton(context, isStartTime: true, label: "Start Time"),
+                  _timePickerButton(context, isStartTime: false, label: "End Time"),
+                ],
+              ),
+            ),
+            SizedBox(height: 32),
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _saveAssignment,
-                    child: Text("Save"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: Text("Save", style: GoogleFonts.poppins(fontSize: 16)),
                   ),
                 ),
                 SizedBox(width: 16),
@@ -211,13 +221,61 @@ class _AssignShiftPageState extends State<AssignShiftPage> {
                         endTime = null;
                       });
                     },
-                    child: Text("Cancel"),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.blue),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: Text("Cancel", style: GoogleFonts.poppins(fontSize: 16, color: Colors.blue)),
                   ),
                 ),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildCard({required String title, required Widget child}) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      elevation: 3,
+      shadowColor: Colors.grey.withOpacity(0.3),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
+            SizedBox(height: 8),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      filled: true,
+      fillColor: Colors.grey[200],
+    );
+  }
+
+  Widget _timePickerButton(BuildContext context, {required bool isStartTime, required String label}) {
+    return TextButton.icon(
+      onPressed: () => _pickTime(context, isStartTime),
+      icon: Icon(Icons.access_time_rounded, color: Colors.blue),
+      label: Text(
+        isStartTime
+            ? (startTime != null ? startTime!.format(context) : label)
+            : (endTime != null ? endTime!.format(context) : label),
+        style: GoogleFonts.poppins(color: Colors.blue, fontSize: 14),
       ),
     );
   }
