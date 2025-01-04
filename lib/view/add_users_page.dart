@@ -80,7 +80,7 @@ class _AccountCreationState extends ConsumerState<StaffCreation> {
 
   String _selectedRole = 'doctor';
   List<String> _specializations = [];
-  final List<String> _roles = ['doctor', 'nurse', 'admin'];
+  final List<String> _roles = ['doctor', 'nurse', 'admin','receptionist'];
 
   final Map<String, String> _roleImages = {
     'doctor': 'assets/lotties/doctor_explaining.json',
@@ -322,6 +322,13 @@ class _AccountCreationState extends ConsumerState<StaffCreation> {
           _buildTextField('Phone', _phoneController, Icons.phone),
 
         ];
+      case 'receptionist':
+        return [
+          _buildTextField('Nurse Name', _nameController, Icons.person),
+          _buildTextField('Email', _emailController, Icons.email),
+          _buildTextField('Phone', _phoneController, Icons.phone),
+
+        ];
       case 'admin':
         return [
           _buildTextField('Admin Name', _nameController, Icons.person),
@@ -465,7 +472,7 @@ class _AccountCreationState extends ConsumerState<StaffCreation> {
           'experience': _experienceController.text.trim(),
           'phone': _phoneController.text.trim(),
           'licenseNumber': _licenseNumberController.text.trim(),
-          'availableDays':_convertAvailableDaysToArray(),
+          'availableDays': _convertAvailableDaysToArray(),
           'about': _aboutController.text.trim(),
           'consultationFees': _consultationFeesController.text.trim(),
           'consultations': 0,
@@ -476,26 +483,35 @@ class _AccountCreationState extends ConsumerState<StaffCreation> {
 
       if (_selectedRole == 'nurse') {
         staffDetails.addAll({
-          'availableDays':_convertAvailableDaysToArray(),
-          
+          'availableDays': _convertAvailableDaysToArray(),
+        });
+      }
+
+      // Receptionist role specific fields
+      if (_selectedRole == 'receptionist') {
+        staffDetails.addAll({
+
         });
       }
 
       if (_selectedRole == 'admin') {
         staffDetails.addAll({
+          // Add fields specific to admin if needed
         });
       }
 
       // Update or create a new document based on whether staff exists
       await clinicDocRef.collection(_selectedRole + "s").doc(staffId).set(staffDetails);
 
-      // Update the staff reference in the clinic document
+      // Update the clinic document with the appropriate staff reference array
       await clinicDocRef.update({
         _selectedRole == 'admin'
             ? 'admins'
             : _selectedRole == 'doctor'
-            ? "doctors"
-            : "staffs": FieldValue.arrayUnion([_emailController.text.trim()])
+            ? 'doctors'
+            : _selectedRole == 'receptionist'
+            ? 'receptionists' // Separate array for receptionists
+            : 'staffs': FieldValue.arrayUnion([_emailController.text.trim()])
       });
 
       _showSuccessDialog();
@@ -506,6 +522,7 @@ class _AccountCreationState extends ConsumerState<StaffCreation> {
       );
     }
   }
+
 
 
   void _showSuccessDialog() {

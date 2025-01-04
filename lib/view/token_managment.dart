@@ -1,38 +1,120 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TokenManagement extends StatefulWidget {
-  const TokenManagement({super.key});
+  final String email;
+
+  const TokenManagement({required this.email, super.key});
 
   @override
   _TokenManagementState createState() => _TokenManagementState();
 }
 
 class _TokenManagementState extends State<TokenManagement> {
-  final List<Map<String, String>> doctors = [
-    {'id': '1', 'doctor': 'Dr. Smith', 'category': 'Cardiologist'},
-    {'id': '2', 'doctor': 'Dr. Smith', 'category': 'Neurologist'},
-    {'id': '3', 'doctor': 'Dr. Lee', 'category': 'Dentist'},
-    {'id': '4', 'doctor': 'Dr. Johnson', 'category': 'Orthopedic'},
-  ];
-
+  List<Map<String, dynamic>> doctors = [];
   String? selectedDoctor;
-  final List<Map<String, String>> tokens = List.generate(50, (index) =>
-  {'token': '${index + 1}', 'status': 'available'}
-  );
+  List<Map<String, dynamic>> tokens = [];
+  String? clinicId;
 
   @override
   void initState() {
     super.initState();
-    selectedDoctor = doctors[0]['id'];
+    findClinicByEmail(); // First find clinic by email
   }
 
-  void assignToken(int index) => setState(() => tokens[index]['status'] = 'assigned');
-  void unassignToken(int index) => setState(() => tokens[index]['status'] = 'available');
+  // Find clinic by checking staff email
+  Future<void> findClinicByEmail() async {
+    try {
+      final clinicsSnapshot = await FirebaseFirestore.instance
+          .collection('clinics')
+          .where('staffs', arrayContains: widget.email)
+          .get();
+
+      if (clinicsSnapshot.docs.isNotEmpty) {
+        // Get the first clinic where this staff works
+        clinicId = clinicsSnapshot.docs.first.id;
+        await fetchDoctors(); // Then fetch doctors for this clinic
+      } else {
+        debugPrint('No clinic found for this email');
+      }
+    } catch (e) {
+      debugPrint('Error finding clinic: $e');
+    }
+  }
+
+  // Fetch doctors from Firestore
+  Future<void> fetchDoctors() async {
+    if (clinicId == null) return;
+
+    try {
+      final doctorSnapshot = await FirebaseFirestore.instance
+          .collection('clinics')
+          .doc(clinicId)
+          .collection('doctors')
+          .get();
+
+      final fetchedDoctors = doctorSnapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'doctor': data['name'] ?? 'Unknown Doctor',
+          'category': data['category'] ?? 'General',
+        };
+      }).toList();
+
+      setState(() {
+        doctors = fetchedDoctors;
+        if (doctors.isNotEmpty) selectedDoctor = doctors[0]['id'] as String;
+      });
+
+      if (selectedDoctor != null) fetchTokens(selectedDoctor!);
+    } catch (e) {
+      debugPrint('Error fetching doctors: $e');
+    }
+  }
+
+  // Fetch tokens from Firestore for the selected doctor
+  Future<void> fetchTokens(String doctorId) async {
+    if (clinicId == null) return;
+
+    try {
+      final tokenSnapshot = await FirebaseFirestore.instance
+          .collection('clinics')
+          .doc(clinicId)
+          .collection('bookings')
+          .where('doctorId', isEqualTo: doctorId)
+          .get();
+
+      final fetchedTokens = tokenSnapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'token': data['token'].toString() ?? 'Unknown',
+          'status': data['status'] ?? 'available',
+        };
+      }).toList();
+
+      setState(() {
+        tokens = fetchedTokens;
+      });
+    } catch (e) {
+      debugPrint('Error fetching tokens: $e');
+    }
+  }
+
+  void assignToken(int index) {
+    setState(() => tokens[index]['status'] = 'assigned');
+    // Update Firestore if needed
+  }
+
+  void unassignToken(int index) {
+    setState(() => tokens[index]['status'] = 'available');
+    // Update Firestore if needed
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: Container(
+      body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -70,44 +152,36 @@ class _TokenManagementState extends State<TokenManagement> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: selectedDoctor,
-                          isExpanded: true,
-                          hint: const Text('Select a doctor'),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF2C3E50),
-                          ),
-                          items: doctors.map((doc) {
-                            return DropdownMenuItem<String>(
-                              value: doc['id'],
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor: _getCategoryColor(doc['category']!),
-                                    radius: 16,
-                                    child: Text(
-                                      doc['doctor']![3],
-                                      style: const TextStyle(color: Colors.white),
-                                    ),
+                    if (doctors.isNotEmpty)
+                      DropdownButton<String>(
+                        value: selectedDoctor,
+                        isExpanded: true,
+                        items: doctors.map((doc) {
+                          return DropdownMenuItem<String>(
+                            value: doc['id'] as String,
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: _getCategoryColor(doc['category'] as String),
+                                  radius: 16,
+                                  child: Text(
+                                    (doc['doctor'] as String)[0],
+                                    style: const TextStyle(color: Colors.white),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Text('${doc['doctor']} (${doc['category']})'),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) => setState(() => selectedDoctor = value),
-                        ),
-                      ),
-                    ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text('${doc['doctor']} (${doc['category']})'),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() => selectedDoctor = value);
+                          if (value != null) fetchTokens(value);
+                        },
+                      )
+                    else
+                      const Text('No doctors available.'),
                   ],
                 ),
               ),
@@ -122,7 +196,8 @@ class _TokenManagementState extends State<TokenManagement> {
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: GridView.builder(
+                child: tokens.isNotEmpty
+                    ? GridView.builder(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 6,
                     crossAxisSpacing: 12,
@@ -132,14 +207,19 @@ class _TokenManagementState extends State<TokenManagement> {
                   itemBuilder: (context, index) {
                     final isAssigned = tokens[index]['status'] == 'assigned';
                     return InkWell(
-                      onTap: () => isAssigned ? unassignToken(index) : assignToken(index),
+                      onTap: () => isAssigned
+                          ? unassignToken(index)
+                          : assignToken(index),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: isAssigned ? const Color(0xFFE74C3C) : const Color(0xFF2ECC71),
+                          color: isAssigned
+                              ? const Color(0xFFE74C3C)
+                              : const Color(0xFF2ECC71),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: (isAssigned ? Colors.red : Colors.green).withOpacity(0.2),
+                              color: (isAssigned ? Colors.red : Colors.green)
+                                  .withOpacity(0.2),
                               blurRadius: 8,
                               offset: const Offset(0, 4),
                             ),
@@ -150,7 +230,7 @@ class _TokenManagementState extends State<TokenManagement> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                tokens[index]['token']!,
+                                tokens[index]['token'] as String,
                                 style: const TextStyle(
                                   fontSize: 20,
                                   color: Colors.white,
@@ -171,7 +251,8 @@ class _TokenManagementState extends State<TokenManagement> {
                       ),
                     );
                   },
-                ),
+                )
+                    : const Center(child: Text('No tokens available.')),
               ),
             ],
           ),

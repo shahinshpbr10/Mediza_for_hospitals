@@ -1,3 +1,4 @@
+import 'package:dashboard_nurse_hospital/view/appointment_listing.dart';
 import 'package:dashboard_nurse_hospital/view/doctor_view.dart';
 import 'package:dashboard_nurse_hospital/view/landing_page.dart';
 import 'package:dashboard_nurse_hospital/view/token_managment.dart';
@@ -261,10 +262,15 @@ class _GetStartedPageState extends ConsumerState<GetStartedPage> {
             .collection('clinics')
             .where('staffs', arrayContains: email)
             .get();
+        final receptionistSnapshot = await FirebaseFirestore.instance
+            .collection('clinics')
+            .where('receptionists', arrayContains: email)
+            .get();
 
         final adminClinics = clinicSnapshot.docs;
         final doctorClinics = doctorSnapshot.docs;
         final staffClinics = staffSnapshot.docs;
+        final receptionistClinics = receptionistSnapshot.docs;
 
         // Determine Role(s) and Navigate
         if (adminClinics.isNotEmpty && doctorClinics.isNotEmpty) {
@@ -279,7 +285,10 @@ class _GetStartedPageState extends ConsumerState<GetStartedPage> {
           }
         } else if (staffClinics.isNotEmpty) {
           _navigateToClinic(context, email, staffClinics, 'Staff');
-        } else {
+        }
+        else if (receptionistClinics.isNotEmpty) {
+          _navigateToClinic(context, email, receptionistClinics, 'receptionist');
+        }else {
           showCustomSnackbar(
             context,
             'No roles or clinics found for this email.',
@@ -564,7 +573,15 @@ class _GetStartedPageState extends ConsumerState<GetStartedPage> {
         Navigator.pushReplacement(
           context,
           CupertinoPageRoute(
-            builder: (context) => const TokenManagement(),
+            builder: (context) =>  TokenManagement(email:email),
+          ),
+        );
+        break;
+      case 'receptionist':
+        Navigator.pushReplacement(
+          context,
+          CupertinoPageRoute(
+            builder: (context) => AppointmentList(email: email,),
           ),
         );
         break;
