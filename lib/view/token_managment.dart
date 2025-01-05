@@ -1,6 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:iconsax/iconsax.dart';
 
+import '../main.dart';
 import 'emerg_page.dart';
 
 class TokenManagement extends StatefulWidget {
@@ -21,7 +24,18 @@ class _TokenManagementState extends State<TokenManagement>
   List<Map<String, dynamic>> tokens = [];
   late TabController _tabController;
   String? selectedToken;
-
+  Future<void> _logout() async {
+    try {
+      await FirebaseAuth.instance.signOut(); // Firebase Logout
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => AuthWrapper()), // Navigate to login page
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error logging out: $e')),
+      );
+    }
+  }
   @override
   void initState() {
     super.initState();
@@ -206,6 +220,7 @@ class _TokenManagementState extends State<TokenManagement>
       appBar: AppBar(
         backgroundColor: const Color(0xFFF8F9FA),
         title: const Text('Token Management'),
+        actions: [ElevatedButton(onPressed: _logout, child: Icon(Iconsax.logout))],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [

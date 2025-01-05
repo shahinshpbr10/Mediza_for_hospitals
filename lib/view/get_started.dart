@@ -237,17 +237,17 @@ class _GetStartedPageState extends ConsumerState<GetStartedPage> {
       final user = userCredential.user;
 
       if (user != null) {
-        // if (!user.emailVerified) {
-        //   await user.sendEmailVerification();
-        //   await FirebaseAuth.instance.signOut();
-        //   showCustomSnackbar(
-        //     context,
-        //     'Email not verified. Please check your email.',
-        //     Icons.error,
-        //     Colors.red,
-        //   );
-        //   return;
-        // }
+        if (!user.emailVerified) {
+          await user.sendEmailVerification();
+          await FirebaseAuth.instance.signOut();
+          showCustomSnackbar(
+            context,
+            'Email not verified. Please check your email.',
+            Icons.error,
+            Colors.red,
+          );
+          return;
+        }
 
         // Fetch Clinics containing the user's email
         final clinicSnapshot = await FirebaseFirestore.instance

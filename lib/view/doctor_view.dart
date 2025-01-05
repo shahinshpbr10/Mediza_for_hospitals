@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
+
+import '../main.dart';
 
 class DoctorDashboard extends StatefulWidget {
   final String email; // Using email to identify the doctor
@@ -23,7 +27,18 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     super.initState();
     _fetchDoctorDetails(); // Fetch doctorId and clinicId on initialization
   }
-
+  Future<void> _logout() async {
+    try {
+      await FirebaseAuth.instance.signOut(); // Firebase Logout
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => AuthWrapper()), // Navigate to login page
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error logging out: $e')),
+      );
+    }
+  }
   Future<void> _fetchDoctorDetails() async {
     try {
       QuerySnapshot doctorQuery = await FirebaseFirestore.instance
@@ -64,6 +79,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       return Scaffold(
         appBar: AppBar(
           title: Text("Doctor Dashboard", style: GoogleFonts.poppins()),
+          actions: [IconButton(onPressed: () => _logout(), icon: Icon(Iconsax.logout))],
         ),
         body: Center(
           child: CircularProgressIndicator(),
